@@ -1,17 +1,17 @@
-# qspace_press
+# QSpace Press
 
-A new Flutter project.
+A monorepo, three apps:
 
-## Getting Started
+- **`app/web`** — the public product (Next.js 14 App Router). SEO-indexed publications, a Tiptap-based post editor, newsletter delivery, subscriptions/payments. This is what launches first.
+- **`app/api`** — the backend (Rust, Axum). Auth, publications, posts, audience, payments, email, distribution, analytics, storage.
+- **`app/mobile`** — a Flutter companion app. Explicitly **post-launch / inactive** per the canon doc's MVP exclusion list — scaffolded and preserved, not under active development. Do not start building against it early.
 
-This project is a starting point for a Flutter application.
+See `work/_arc/qspace-press/canon-canvas/` for the full technical and product canon (architecture, data model, deployment plan) — this README is orientation, not the spec.
 
-A few resources to get you started if this is your first Flutter project:
+## Local dev
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+`docker compose up` boots the whole stack (`app/web`, `app/api`, Postgres, Redis) on dedicated ports — see `docker-compose.yml` and `.env.example`. Chosen deliberately over the canon doc's original managed-Supabase/managed-Upstash assumption, so local dev never depends on external accounts.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Status
+
+Pre-Cycle 0 — repo scaffolding in progress, no product code shipped yet.
