@@ -1,3 +1,10 @@
 packages:
   - "app/*"
   - "packages/*"
+allowBuilds:
+  # Both are legitimate, well-known native postinstall builds -- sharp
+  # (image optimization, a real canon-doc dependency) and unrs-resolver
+  # (eslint's own resolver). Approved so `pnpm install` isn't silently
+  # missing native bindings these packages need to actually run.
+  sharp: true
+  unrs-resolver: true
