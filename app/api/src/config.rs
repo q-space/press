@@ -3,7 +3,15 @@
 
 use std::env;
 
+// database_url/redis_url/jwt_secret are read from env here but nothing
+// consumes them yet -- db.rs's own connect() (also #[allow(dead_code)]
+// for the same reason) isn't called from main.rs's boot sequence until
+// Week 2 wires in real entities/migrations. Loading them now, unused, is
+// deliberate: it means Config::from_env() already has its final shape,
+// so wiring db.rs in later is "call connect(&config.database_url)", not
+// a second config-loading pass.
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct Config {
     pub port: u16,
     pub database_url: String,
