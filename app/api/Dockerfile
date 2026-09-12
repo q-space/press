@@ -5,7 +5,7 @@
 # latest) since a production image should be reproducible -- cargo-watch's
 # MSRV churn that forced Dockerfile.dev to stay unpinned doesn't apply here
 # at all (cargo-watch is a dev-only tool this image never installs).
-FROM rust:1.87-slim AS builder
+FROM rust:1.97-slim AS builder
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY app/api .
