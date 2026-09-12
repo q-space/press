@@ -1,0 +1,45 @@
+# Deploys web + api to the OCI VM (qpress.acexoft.com) on every push to
+# `staging` -- the fleet's standard convention.
+#
+# Updated 12 Sep 2026: this file originally triggered off `main` because
+# the repo had no 3-branch split (only `main` existed, confirmed via
+# `git ls-remote`), which BB26090904 flagged as a real gap from the isconl
+# fleet's branch policy. `dev`/`staging`/`main` were created that day, so
+# the gap is closed and the trigger now matches every other fleet repo:
+#   dev     -- all development, never deploys
+#   staging -- push = deploy here, to qpress.acexoft.com
+#   main    -- release branch, deploys to qspacepress.com (not yet built:
+#              the domain is unregistered, so there is no main workflow yet)
+#
+# Mirrors hub's own deploy-staging.yml pattern exactly: raw SSH, not a
+# marketplace action, rebuilds/restarts only web+api -- the isconl fleet's
+# 8 engines on the same VM keep running untouched.
+name: deploy-staging
+
+on:
+  push:
+    branches: [staging]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy web + api to OCI VM
+        env:
+          SSH_KEY: ${{ secrets.OCI_VM_SSH_KEY }}
+          VM_HOST: ${{ secrets.OCI_VM_HOST }}
+          VM_USER: ${{ secrets.OCI_VM_USER }}
+        run: |
+          install -m 600 -D /dev/null ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=accept-new "$VM_USER@$VM_HOST" '
+            set -e
+            cd ~/isconl-docker/qspace-press
+            git fetch origin staging
+            git reset --hard origin/staging
+            cd ~/isconl-docker/deploy
+            sudo docker compose -f docker-compose.vm.yml build qspace-web qspace-api
+            sudo docker compose -f docker-compose.vm.yml up -d qspace-web qspace-api
+            sleep 5
+            curl -sf -m 10 http://127.0.0.1:3001/health || (echo "qspace-api failed its post-deploy health check" >&2; exit 1)
+          '
