@@ -5,6 +5,7 @@ mod config;
 mod db;
 mod distribution;
 mod email;
+mod generate;
 mod payments;
 mod posts;
 mod publications;
