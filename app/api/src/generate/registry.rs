@@ -20,6 +20,10 @@ use super::archetypes::decision_brief::DecisionBrief;
 use super::archetypes::email::Email;
 use super::archetypes::formal_letter::FormalLetter;
 use super::archetypes::invoice::Invoice;
+use super::archetypes::meeting_notes::MeetingNotes;
+use super::archetypes::multipage_report::MultipageReport;
+use super::archetypes::proposal::Proposal;
+use super::archetypes::seed_data_catalogue::SeedDataCatalogue;
 use super::archetypes::single_page_memo::SinglePageMemo;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -32,9 +36,12 @@ fn common_archetypes() -> Vec<Arc<dyn Archetype>> {
         Arc::new(Email),
         Arc::new(FormalLetter),
         Arc::new(Invoice),
-        // Remaining 5: meeting-notes, multipage-report, proposal,
-        // seed-data-catalogue, page-truth-brief -- ported incrementally,
-        // each added here.
+        Arc::new(MeetingNotes),
+        Arc::new(MultipageReport),
+        Arc::new(Proposal),
+        Arc::new(SeedDataCatalogue),
+        // Remaining 1: page-truth-brief -- not yet located/ported (client
+        // content, not infrastructure -- see BB26091203's own note).
     ]
 }
 

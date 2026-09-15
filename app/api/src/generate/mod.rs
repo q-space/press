@@ -14,9 +14,8 @@ pub mod doc_builder;
 pub mod naming;
 pub mod node_tree;
 pub mod registry;
-// render_docx/render_pdf land in a follow-up checkpoint (docx-rs/genpdf
-// crate integration, verified against a real cargo build) -- not declared
-// yet so the rest of this module compiles and tests cleanly on its own.
+pub mod render_docx;
 pub mod render_html;
 pub mod render_markdown;
+pub mod render_pdf;
 pub mod style;
