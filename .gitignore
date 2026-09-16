@@ -37,4 +37,20 @@ Thumbs.db
 
 # Logs
 *.log
-_next/
+
+# Next.js build output.
+#
+# This was `_next/` until 16 Sep 2026, filed under "Logs", which it is not.
+# The only `_next` directory in this repo is `/_next/` at the root -- the
+# project's BACKLOG, the same `_next/` convention every project on the drive
+# uses. So that rule ignored no build output whatsoever and instead hid 20
+# live backlog rows from git. Because this repo is nested inside the _kit
+# checkout (which cannot track another repo's contents), those rows existed
+# in exactly one place: one disk, no remote, no backup.
+#
+# Next.js actually emits `.next/` while developing and `out/` on export --
+# and `out/_next/` is covered by the `out/` rule, so nothing is lost.
+.next/
+out/
+build/
+dist/
