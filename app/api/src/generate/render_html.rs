@@ -157,6 +157,12 @@ fn pt2px(pt: f32) -> i32 {
 fn margin_px(twips: u32) -> i32 {
     ((twips as f32) / 1440.0 * 96.0).round() as i32
 }
+/// The same page margin expressed for `@page`, which is the only thing
+/// that sets the printed margin -- see the `@page`/`@media print` block in
+/// `css()` for why the on-screen padding cannot be it.
+fn margin_mm(twips: u32) -> String {
+    format!("{:.1}", (twips as f32) / 1440.0 * 25.4)
+}
 
 fn css() -> String {
     format!(
@@ -208,6 +214,27 @@ details[open] > summary::before {{ content: '\25be  '; }}
   margin: 4px 0 0 18px; padding: 6px 10px;
   background: #f7f8fc; border-left: 2px solid #{h2_border};
   font-size: {body_px}px; color: #333;
+}}
+
+/* Print/PDF. The printed margin comes from @page and never from .page's
+   own padding, so an overflow page gets the same margin as the first --
+   padding only indents the first page's content and leaves page 2 flush
+   to the sheet edge.
+
+   .page itself keeps no fixed height, no aspect-ratio and no overflow,
+   on screen or in print. Both of those tricks silently LOSE content
+   rather than misplacing it: a print engine does not paginate a scrolling
+   container, it clips it to the box height, so everything past the fold
+   vanishes from the PDF instead of flowing to page 2. Natural content
+   flow means an overflow on screen is an honest signal that the PDF
+   spills to a second page too, which is what makes the Creator Studio
+   preview (BB26091204) the output rather than an approximation of it. */
+@page {{ size: A4; margin: {mm_top}mm {mm_right}mm {mm_bottom}mm {mm_left}mm; }}
+@media print {{
+  body {{ background: #fff; }}
+  .page {{ max-width: none; margin: 0; padding: 0; box-shadow: none; }}
+  tr, li, .kv-row, details {{ break-inside: avoid; }}
+  h1, h2 {{ break-after: avoid; }}
 }}"#,
         font = STYLE.font.family,
         body_size = pt2px(STYLE.body.size),
@@ -216,6 +243,10 @@ details[open] > summary::before {{ content: '\25be  '; }}
         mright = margin_px(STYLE.page.margin_right_twips),
         mbottom = margin_px(STYLE.page.margin_bottom_twips),
         mleft = margin_px(STYLE.page.margin_left_twips),
+        mm_top = margin_mm(STYLE.page.margin_top_twips),
+        mm_right = margin_mm(STYLE.page.margin_right_twips),
+        mm_bottom = margin_mm(STYLE.page.margin_bottom_twips),
+        mm_left = margin_mm(STYLE.page.margin_left_twips),
         h1_size = pt2px(STYLE.h1.size + 5.0),
         h1_color = STYLE.h1.color,
         meta_size = pt2px(STYLE.meta.size + 2.0),
@@ -279,5 +310,30 @@ mod tests {
         let html = render_node(&node);
         assert!(html.contains("<details><summary>a</summary>"));
         assert!(html.contains("<li>b</li>"));
+    }
+
+    /// The print rules are what make the Creator Studio preview the same
+    /// document as the export rather than a lookalike, so they are
+    /// asserted rather than left to inspection. The negative assertion
+    /// matters most: a fixed height or a scrolling container would clip
+    /// the PDF instead of paginating it, and the loss is silent.
+    #[test]
+    fn print_css_sets_the_page_margin_and_never_paginates_a_clipped_box() {
+        let sheet = css();
+        assert!(sheet.contains("@page"));
+        assert!(sheet.contains("size: A4"));
+        assert!(sheet.contains("@media print"));
+        assert!(sheet.contains(".page { max-width: none; margin: 0; padding: 0; box-shadow: none; }"));
+        assert!(sheet.contains("break-inside: avoid"));
+        assert!(!sheet.contains("aspect-ratio:"));
+        assert!(!sheet.contains("overflow:"));
+        assert!(!sheet.contains("overflow-y"));
+        assert!(!sheet.contains("max-height:"));
+    }
+
+    #[test]
+    fn page_margin_is_expressed_in_millimetres_for_at_page() {
+        assert_eq!(margin_mm(1440), "25.4");
+        assert_eq!(margin_mm(720), "12.7");
     }
 }
