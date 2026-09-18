@@ -36,7 +36,22 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 # comments for why these specific crates over the alternatives.
 docx-rs = "0.4"
 genpdf = "0.2"
+# BB26091205: docx/pdf renders come back through the JSON `/archetypes/*`
+# API base64-encoded (binary in a JSON response body needs an encoding);
+# base64 is the crate every other Rust HTTP stack reaches for, no reason
+# to hand-roll it.
+base64 = "0.22"
+
+[lib]
+name = "qspace_press_api"
+path = "src/lib.rs"
 
 [[bin]]
 name = "qspace-press-api"
 path = "src/main.rs"
+
+# BB26091205: operator CLI to mint a D-010 thin-client token -- see its
+# own doc comment for why this is a CLI and not (yet) an HTTP endpoint.
+[[bin]]
+name = "mint_token"
+path = "src/bin/mint_token.rs"

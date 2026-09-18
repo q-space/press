@@ -4,13 +4,13 @@
 //! engine's behavior field-for-field. See each submodule's doc comment
 //! for what it's ported from and any deliberate Rust-idiom departures.
 //!
-//! Not wired to any HTTP route yet -- BB26091205 (thin-client API) is what
-//! exposes this over `/archetypes/*`.
+//! BB26091205 wires this over `/archetypes/*` -- see `handlers::router`.
 
 pub mod archetype;
 pub mod archetypes;
 pub mod content;
 pub mod doc_builder;
+pub mod handlers;
 pub mod naming;
 pub mod node_tree;
 pub mod registry;
