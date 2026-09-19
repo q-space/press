@@ -3,6 +3,7 @@ mod audience;
 mod auth;
 mod config;
 mod db;
+mod delivery;
 mod distribution;
 mod email;
 mod generate;
