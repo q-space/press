@@ -1,0 +1,33 @@
+{
+  "clientId": "qspace_press",
+  "suiteId": "suite_saas",
+  "brand": {
+    "colors": {
+      "primary": "#FF5500"
+    },
+    "fonts": {
+      "hero": "Barlow",
+      "text": "Inter"
+    },
+    "copy": {
+      "appName": "My App",
+      "wordBold": "My",
+      "wordLight": " App",
+      "domain": "myapp.com"
+    },
+    "canvas": {
+      "personality": "energetic",
+      "motion": "full"
+    },
+    "logo": {
+      "horizontal": null
+    }
+  },
+  "admin_portals": {
+    "dashboard": { "active": true },
+    "brand": { "active": true },
+    "features": { "active": true },
+    "settings": { "active": true }
+  },
+  "features": {}
+}
