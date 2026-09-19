@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Publication } from "@qspace-press/shared";
+import { createCanvas } from "@/lib/canvas";
 import {
   ArchetypeSchema,
   ArchetypeSummary,
@@ -95,9 +97,11 @@ export default function StudioWizard() {
   });
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [generateBusy, setGenerateBusy] = useState(false);
+  const [canvasBusy, setCanvasBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [draftSavedAt, setDraftSavedAt] = useState("");
 
+  const router = useRouter();
   const namespace = namespaceFor(target);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -255,10 +259,11 @@ export default function StudioWizard() {
     return applyErrors(validateRequired(schema, values));
   }
 
-  async function runPreview() {
-    if (!schema || !checkBeforeSend()) return;
-    setPreviewBusy(true);
-    setNotice("");
+  /** Shared by the "Live preview" button and Canvas's publish action --
+   * both need the engine's own rendered HTML, not a second approximation
+   * of it. Returns null (having already surfaced the error) on failure. */
+  async function fetchPreviewHtml(): Promise<string | null> {
+    if (!schema) return null;
     try {
       const res = await fetch("/api/archetypes/preview", {
         method: "POST",
@@ -274,11 +279,22 @@ export default function StudioWizard() {
         const errors = normalizeErrors(body.errors, schema);
         if (errors.length) applyErrors(errors);
         else setFormErrors([body.error ?? `${res.status} ${res.statusText}`]);
-        return;
+        return null;
       }
-      setPreviewHtml(body.html ?? "");
+      return body.html ?? "";
     } catch (cause) {
       setFormErrors([cause instanceof Error ? cause.message : String(cause)]);
+      return null;
+    }
+  }
+
+  async function runPreview() {
+    if (!schema || !checkBeforeSend()) return;
+    setPreviewBusy(true);
+    setNotice("");
+    try {
+      const html = await fetchPreviewHtml();
+      if (html !== null) setPreviewHtml(html);
     } finally {
       setPreviewBusy(false);
     }
@@ -316,6 +332,32 @@ export default function StudioWizard() {
       setFormErrors([cause instanceof Error ? cause.message : String(cause)]);
     } finally {
       setGenerateBusy(false);
+    }
+  }
+
+  /**
+   * Canvas (BB26091502): publish the current document as a live-editable
+   * HTML artifact. Takes the engine's own rendered HTML plus a title and
+   * nothing else -- Canvas has no idea this came from an archetype wizard
+   * step, an invoice or a memo, and it must stay that way (see the row's
+   * content-type-agnostic scoping note).
+   */
+  async function publishToCanvas() {
+    if (!schema || !checkBeforeSend()) return;
+    setCanvasBusy(true);
+    setNotice("");
+    try {
+      const html = previewHtml || (await fetchPreviewHtml());
+      if (!html) return;
+      setPreviewHtml(html);
+      const title =
+        values[schema.filenameFields?.primary ?? ""]?.trim() || schema.title || "Untitled canvas";
+      const canvas = await createCanvas({ title, html });
+      router.push(`/canvas/${canvas.id}`);
+    } catch (cause) {
+      setFormErrors([cause instanceof Error ? cause.message : String(cause)]);
+    } finally {
+      setCanvasBusy(false);
     }
   }
 
@@ -441,9 +483,18 @@ export default function StudioWizard() {
                   type="button"
                   onClick={runGenerate}
                   disabled={generateBusy}
-                  className="ml-auto rounded bg-neutral-900 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-700 disabled:opacity-40"
+                  className="ml-auto rounded border border-neutral-300 px-3 py-1 text-xs font-medium text-neutral-700 hover:border-neutral-900 disabled:opacity-40"
                 >
                   {generateBusy ? "Generating..." : "Generate"}
+                </button>
+                <button
+                  type="button"
+                  onClick={publishToCanvas}
+                  disabled={canvasBusy}
+                  title="Publish a live-editable HTML artifact you can keep editing and share via a link"
+                  className="rounded bg-neutral-900 px-3 py-1 text-xs font-medium text-white hover:bg-neutral-700 disabled:opacity-40"
+                >
+                  {canvasBusy ? "Publishing..." : "Canvas"}
                 </button>
               </div>
 
