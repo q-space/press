@@ -13,6 +13,7 @@ pub mod db;
 pub mod distribution;
 pub mod email;
 pub mod generate;
+pub mod lists;
 pub mod payments;
 pub mod posts;
 pub mod publications;

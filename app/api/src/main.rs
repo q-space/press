@@ -1,5 +1,6 @@
 //! The binary entrypoint -- module declarations live in `lib.rs` now
-//! (BB26091205) so `src/bin/mint_token.rs` can reuse them too.
+//! (BB26091205) so `src/bin/mint_token.rs` can reuse them too. `lists`
+//! (merged from `dev`) is declared there too -- see `lib.rs`.
 
 use axum::{routing::get, Json, Router};
 use qspace_press_api::{config, generate};
