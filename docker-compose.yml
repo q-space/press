@@ -1,0 +1,111 @@
+# Local dev stack -- BB26090903. Dedicated ports (3000/3001/5433/6380/
+# 9000-9001), chosen to stay clear of the isconl fleet's own local-dev
+# ports (8081-8087, 8888, 5001 -- confirmed by reading hub/scripts/
+# dev-local.sh directly, not assumed). Supersedes the canon doc's own
+# managed-Supabase/managed-Upstash/Cloudflare-R2 local-dev assumption
+# entirely -- every backing service is self-hosted. MinIO replaces R2
+# (per Sconl's explicit call, same session: no Cloudflare billing
+# subscription needed before a real user exists) -- app/api's S3 client
+# code talks to either identically, since MinIO implements the same S3 API.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: app/web/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./app/web:/app/app/web
+      - ./packages:/app/packages
+      - /app/app/web/node_modules
+      - /app/app/web/.next
+    env_file: .env
+    # QSPACE_API_URL: same internal-DNS override reasoning as `api`'s
+    # block below -- the value in .env is host-facing (for `pnpm dev` run
+    # directly on the host); from inside this container, `app/api` is
+    # reachable at http://api:3001. PORT: .env's PORT=3001 is meant for
+    # `app/api` (both services load the same .env via env_file) -- Next.js
+    # auto-respects PORT too, so without this override it silently binds
+    # 3001 instead of 3000, and nothing answers on the published host port.
+    # Confirmed live, not guessed (`web-1` logged "Local: http://localhost:3001`).
+    environment:
+      QSPACE_API_URL: http://api:3001
+      PORT: "3000"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: ./app/api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./app/api:/app
+      - /app/target
+    env_file: .env
+    # Overrides .env's host-facing URLs (localhost:<published-port>,
+    # correct for a process run directly on the host) with the compose
+    # network's own internal service names/ports -- from inside this
+    # container, `postgres`/`redis`/`minio` resolve via Docker's embedded
+    # DNS, and each service's INTERNAL port is what's listening there
+    # (5432/6379/9000), not the port mapped out to the host (5433/6380/9000).
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/qspacepress_dev
+      REDIS_URL: redis://redis:6379
+      S3_ENDPOINT: http://minio:9000
+    depends_on:
+      - postgres
+      - redis
+      - minio-init
+
+  postgres:
+    image: postgres:16
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: qspacepress_dev
+    volumes:
+      - qspace_press_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    ports:
+      - "6380:6379"
+    volumes:
+      - qspace_press_redis_data:/data
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - qspace_press_minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin minioadmin &&
+      mc mb --ignore-existing local/qspacepress-media
+      "
+
+volumes:
+  qspace_press_postgres_data:
+  qspace_press_redis_data:
+  qspace_press_minio_data:

@@ -1,0 +1,30 @@
+# Dev-only image -- optimized for fast rebuild via docker-compose's bind
+# mounts (see ../../docker-compose.yml), not image size. The production
+# Dockerfile is BB26090904/staging-deploy scope, not this row's.
+FROM node:20-slim
+
+RUN corepack enable && corepack prepare pnpm@12.3.4 --activate
+
+WORKDIR /app
+
+# Copy just the workspace manifests first so `pnpm install` layer-caches
+# independently of source changes.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+COPY app/web/package.json app/web/package.json
+COPY packages/shared/package.json packages/shared/package.json
+
+RUN pnpm install --frozen-lockfile
+
+COPY app/web app/web
+COPY packages/shared packages/shared
+
+WORKDIR /app/app/web
+EXPOSE 3000
+# `pnpm dev -- -H 0.0.0.0` doesn't cleanly forward the flag through the
+# `next dev` script (confirmed live: Next.js ends up treating `-H` as a
+# positional project directory, not a flag) -- invoking the `next` binary
+# directly via `pnpm exec` sidesteps the script-arg-forwarding ambiguity
+# entirely. Binding 0.0.0.0 (not the package.json `dev` script's own
+# localhost-only default) is container-specific: the container's loopback
+# isn't reachable from the host, only its published port is.
+CMD ["pnpm", "exec", "next", "dev", "-H", "0.0.0.0"]
