@@ -14,4 +14,13 @@ See `work/_arc/qspace-press/canon-canvas/` for the full technical and product ca
 
 ## Status
 
-Pre-Cycle 0 — repo scaffolding in progress, no product code shipped yet.
+Pre-Cycle 0 — most of `app/api` is scaffolding with no served interface yet
+(`payments`, `posts`, etc. wait on `db.rs` connecting Postgres). One real
+exception: `generate::` (the document-generation engine — 9 archetypes, 4
+renderers, ported from iSconl `scope`'s JS engine per `BB26091203`) is
+substantial and is served today at `POST /api/generate` /
+`GET /api/generate/archetypes` (`BP26091906`) — it needs no database, so it
+didn't have to wait for the rest of the stack. Corrected 19 Sep 2026: this
+line previously said "no product code shipped yet," which was stale and
+misled in the opposite direction from iSconl canon §5 (which already
+assumed these capabilities had moved here).

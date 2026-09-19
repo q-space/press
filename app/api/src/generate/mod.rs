@@ -4,13 +4,18 @@
 //! engine's behavior field-for-field. See each submodule's doc comment
 //! for what it's ported from and any deliberate Rust-idiom departures.
 //!
-//! Not wired to any HTTP route yet -- BB26091205 (thin-client API) is what
-//! exposes this over `/archetypes/*`.
+//! Routed as of BP26091906: `handlers.rs` is the HTTP surface (`POST
+//! /api/generate`, `GET /api/generate/archetypes`), wired in `main.rs`.
+//! BB26091205 (thin-client API) is still what resolves a real per-
+//! engagement `namespace` against Qpress's own data model -- until then
+//! every lookup falls through to `_common`, same as the registry already
+//! documents.
 
 pub mod archetype;
 pub mod archetypes;
 pub mod content;
 pub mod doc_builder;
+pub mod handlers;
 pub mod naming;
 pub mod node_tree;
 pub mod registry;
