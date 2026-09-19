@@ -77,6 +77,14 @@ pub trait Archetype: Send + Sync {
     fn layout(&self) -> Option<&'static str> {
         None
     }
+    /// BA26091105's doc-ID type code (e.g. "BRIEF" for weekly-status-brief)
+    /// -- `None` for every archetype that doesn't opt into the doc
+    /// registry. Declared here, not hardcoded in the registry/route layer,
+    /// same reasoning as `filename_fields`: the archetype is the one place
+    /// that knows what it is.
+    fn doc_id_type(&self) -> Option<&'static str> {
+        None
+    }
     fn validate(&self, content: &Content) -> ValidationResult;
     /// Mirrors doc-builder.js's contract: throws (here, `Err`) on invalid
     /// content rather than building a partial document -- a document

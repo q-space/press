@@ -36,6 +36,9 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 # comments for why these specific crates over the alternatives.
 docx-rs = "0.4"
 genpdf = "0.2"
+# BB26091208: /archetypes/generate returns each rendered file as base64
+# over JSON (same shape the web app's GeneratedFile.base64 already expects).
+base64 = "0.22"
 
 [[bin]]
 name = "qspace-press-api"

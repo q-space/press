@@ -25,6 +25,7 @@ use super::archetypes::multipage_report::MultipageReport;
 use super::archetypes::proposal::Proposal;
 use super::archetypes::seed_data_catalogue::SeedDataCatalogue;
 use super::archetypes::single_page_memo::SinglePageMemo;
+use super::archetypes::weekly_status_brief::WeeklyStatusBrief;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::OnceLock;
@@ -40,6 +41,7 @@ fn common_archetypes() -> Vec<Arc<dyn Archetype>> {
         Arc::new(MultipageReport),
         Arc::new(Proposal),
         Arc::new(SeedDataCatalogue),
+        Arc::new(WeeklyStatusBrief),
         // Remaining 1: page-truth-brief -- not yet located/ported (client
         // content, not infrastructure -- see BB26091203's own note).
     ]

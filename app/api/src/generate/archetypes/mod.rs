@@ -7,3 +7,4 @@ pub mod multipage_report;
 pub mod proposal;
 pub mod seed_data_catalogue;
 pub mod single_page_memo;
+pub mod weekly_status_brief;

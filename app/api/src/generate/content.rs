@@ -22,20 +22,23 @@ pub fn get_str_array(content: &Content, field: &str) -> Option<Vec<String>> {
     })
 }
 
-/// Array of `{claim, reason}` / `{text, reason}`-shaped objects -- read
-/// `key` and `reason` off each element, skipping any element missing `key`.
-pub fn get_pair_array(content: &Content, field: &str, key: &str) -> Option<Vec<(String, String)>> {
+/// Array of two-key-shaped objects (e.g. `{claim, reason}`,
+/// `{question, answer}`) -- read `key_a` and `key_b` off each element,
+/// skipping any element missing `key_a`. `key_b` defaults to an empty
+/// string when absent, same "missing is empty, not an error" convention
+/// as the rest of this module.
+pub fn get_pair_array(content: &Content, field: &str, key_a: &str, key_b: &str) -> Option<Vec<(String, String)>> {
     content.get(field).and_then(|v| v.as_array()).map(|arr| {
         arr.iter()
             .filter_map(|item| {
                 let obj = item.as_object()?;
-                let text = obj.get(key)?.as_str()?.to_string();
-                let reason = obj
-                    .get("reason")
+                let a = obj.get(key_a)?.as_str()?.to_string();
+                let b = obj
+                    .get(key_b)
                     .and_then(|r| r.as_str())
                     .unwrap_or("")
                     .to_string();
-                Some((text, reason))
+                Some((a, b))
             })
             .collect()
     })

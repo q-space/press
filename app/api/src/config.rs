@@ -17,6 +17,10 @@ pub struct Config {
     pub database_url: String,
     pub redis_url: String,
     pub jwt_secret: String,
+    /// BB26091208: same env var name as iSconl spark's `ai-provider.js`
+    /// (`GROQ_API_KEY`) -- deliberate, not incidental, so the same
+    /// Bitwarden-sourced secret works unchanged on either engine.
+    pub groq_api_key: String,
 }
 
 impl Config {
@@ -29,6 +33,7 @@ impl Config {
             database_url: env::var("DATABASE_URL").unwrap_or_default(),
             redis_url: env::var("REDIS_URL").unwrap_or_default(),
             jwt_secret: env::var("JWT_SECRET").unwrap_or_default(),
+            groq_api_key: env::var("GROQ_API_KEY").unwrap_or_default(),
         }
     }
 }
