@@ -164,9 +164,13 @@ fn margin_mm(twips: u32) -> String {
     format!("{:.1}", (twips as f32) / 1440.0 * 25.4)
 }
 
-fn css() -> String {
+/// `accent` is a bare hex string (`STYLE`'s own convention, no leading
+/// `#`) -- the caller has already run it through `style::resolve_accent`,
+/// so by the time it reaches here "which accent" is a decided question,
+/// not one this function answers.
+fn css(accent: &str) -> String {
     format!(
-        r#":root {{ color-scheme: light; }}
+        r#":root {{ color-scheme: light; --pg-accent: #{accent}; }}
 body {{
   margin: 0; background: #f4f6fa;
   font-family: '{font}', Calibri, 'Segoe UI', Arial, sans-serif;
@@ -185,8 +189,8 @@ h1 {{
   font-size: {meta_size}px; color: #{meta_color}; margin: 0 0 18px 0;
 }}
 h2 {{
-  font-size: {h2_size}px; color: #{h2_color}; font-weight: 700;
-  border-bottom: 1px solid #{h2_border};
+  font-size: {h2_size}px; color: var(--pg-accent); font-weight: 700;
+  border-bottom: 1px solid var(--pg-accent);
   padding-bottom: 4px; margin: {h2_before}px 0 {h2_after}px 0;
 }}
 p {{ margin: 0 0 {body_after}px 0; }}
@@ -208,11 +212,11 @@ th {{ background: #f0f2f8; }}
 details {{ margin: 0 0 6px 0; }}
 details > summary {{ cursor: pointer; list-style: none; }}
 details > summary::-webkit-details-marker {{ display: none; }}
-details > summary::before {{ content: '\25b8  '; color: #{h2_color}; font-size: 0.85em; }}
+details > summary::before {{ content: '\25b8  '; color: var(--pg-accent); font-size: 0.85em; }}
 details[open] > summary::before {{ content: '\25be  '; }}
 .bullet-detail {{
   margin: 4px 0 0 18px; padding: 6px 10px;
-  background: #f7f8fc; border-left: 2px solid #{h2_border};
+  background: #f7f8fc; border-left: 2px solid var(--pg-accent);
   font-size: {body_px}px; color: #333;
 }}
 
@@ -252,8 +256,6 @@ details[open] > summary::before {{ content: '\25be  '; }}
         meta_size = pt2px(STYLE.meta.size + 2.0),
         meta_color = STYLE.meta.color,
         h2_size = pt2px(STYLE.h2.size + 3.0),
-        h2_color = STYLE.h2.color,
-        h2_border = STYLE.h2.border_color.unwrap_or(""),
         h2_before = margin_px(STYLE.spacing.h2_before_twips),
         h2_after = margin_px(STYLE.spacing.h2_after_twips),
         body_after = margin_px(STYLE.spacing.body_after_twips),
@@ -264,7 +266,15 @@ details[open] > summary::before {{ content: '\25be  '; }}
 
 /// `DocumentTree` -> a self-contained HTML string (no external asset/
 /// network dependency -- inline `<style>` only).
-pub fn render_html(doc: &DocumentTree) -> String {
+///
+/// `accent` is the already-*resolved* accent (BB26091501 --
+/// `style::resolve_accent(document_override, brand_default)`), threaded in
+/// as the `--pg-accent` CSS custom property so every accent-coloured
+/// element in `css()` follows it. This function does no resolution of its
+/// own -- by design, so the same renderer works whether `accent` came from
+/// a per-document override or a brand default, and neither this function
+/// nor `css()` can accidentally write a resolved value back anywhere.
+pub fn render_html(doc: &DocumentTree, accent: &str) -> String {
     let mut body_parts = vec!["<div class=\"page\">".to_string(), format!("<h1>{}</h1>", esc(&doc.headline))];
     if let Some(meta) = &doc.meta_line {
         body_parts.push(format!("<p class=\"meta-line\">{}</p>", esc(meta)));
@@ -281,7 +291,7 @@ pub fn render_html(doc: &DocumentTree) -> String {
     format!(
         "<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<title>{}</title>\n<style>\n{}\n</style>\n</head>\n<body>\n{}\n</body>\n</html>\n",
         esc(&doc.headline),
-        css(),
+        css(accent),
         body
     )
 }
@@ -299,7 +309,7 @@ mod tests {
             sections: vec![paragraph("say **hi** to <you>")],
             footer_note: None,
         });
-        let html = render_html(&doc);
+        let html = render_html(&doc, crate::generate::style::DEFAULT_ACCENT);
         assert!(html.contains("<title>&lt;Title&gt;</title>"));
         assert!(html.contains("<p>say <strong>hi</strong> to &lt;you&gt;</p>"));
     }
@@ -319,7 +329,7 @@ mod tests {
     /// the PDF instead of paginating it, and the loss is silent.
     #[test]
     fn print_css_sets_the_page_margin_and_never_paginates_a_clipped_box() {
-        let sheet = css();
+        let sheet = css(crate::generate::style::DEFAULT_ACCENT);
         assert!(sheet.contains("@page"));
         assert!(sheet.contains("size: A4"));
         assert!(sheet.contains("@media print"));
@@ -335,5 +345,57 @@ mod tests {
     fn page_margin_is_expressed_in_millimetres_for_at_page() {
         assert_eq!(margin_mm(1440), "25.4");
         assert_eq!(margin_mm(720), "12.7");
+    }
+
+    /// BB26091501 -- the resolved accent must actually reach the page as
+    /// `--pg-accent`, and every accent-coloured rule must read it through
+    /// `var(--pg-accent)` rather than baking in a literal hex, or a brand
+    /// default/override would have nothing to thread into.
+    #[test]
+    fn resolved_accent_is_set_as_the_pg_accent_custom_property() {
+        let sheet = css("1f7a44");
+        assert!(sheet.contains(":root { color-scheme: light; --pg-accent: #1f7a44; }"));
+        assert!(sheet.contains("color: var(--pg-accent)"));
+        assert!(sheet.contains("border-bottom: 1px solid var(--pg-accent)"));
+        assert!(sheet.contains("border-left: 2px solid var(--pg-accent)"));
+        assert!(!sheet.contains("#2F5496"));
+    }
+
+    /// Two documents generated with the same resolved accent (the "nobody
+    /// touched the override" case) must produce byte-identical CSS --
+    /// this is `resolve_accent`'s own idempotence, observed from the
+    /// renderer's side of the boundary.
+    #[test]
+    fn same_resolved_accent_produces_identical_output() {
+        let a = render_html(
+            &crate::generate::node_tree::document(crate::generate::node_tree::DocumentSpec {
+                headline: "Weekly Brief".into(),
+                meta_line: None,
+                sections: vec![],
+                footer_note: None,
+            }),
+            "1f7a44",
+        );
+        let b = render_html(
+            &crate::generate::node_tree::document(crate::generate::node_tree::DocumentSpec {
+                headline: "Weekly Brief".into(),
+                meta_line: None,
+                sections: vec![],
+                footer_note: None,
+            }),
+            "1f7a44",
+        );
+        assert_eq!(a, b);
+    }
+
+    /// A per-document override changes only that document's output --
+    /// asserted here as "a different accent produces different CSS", the
+    /// renderer-side half of "overriding one brief does not touch another".
+    #[test]
+    fn a_different_accent_changes_only_the_custom_property_value() {
+        let brand_default = css(crate::generate::style::DEFAULT_ACCENT);
+        let overridden = css("ff0000");
+        assert_ne!(brand_default, overridden);
+        assert!(overridden.contains("--pg-accent: #ff0000;"));
     }
 }

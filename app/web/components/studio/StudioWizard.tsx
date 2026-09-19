@@ -17,6 +17,7 @@ import {
   validateRequired,
 } from "@/lib/archetypes";
 import {
+  DEFAULT_ACCENT,
   GENERAL_TARGET,
   StudioDraft,
   StudioTarget,
@@ -97,6 +98,18 @@ export default function StudioWizard() {
   const [generateBusy, setGenerateBusy] = useState(false);
   const [notice, setNotice] = useState("");
   const [draftSavedAt, setDraftSavedAt] = useState("");
+
+  // BB26091501 -- accent colour. `accentOverrideOn` off means "use the
+  // brand default (or the house default, for General)"; the resolution
+  // order (per-document override, else brand default) is applied
+  // server-side against exactly these two inputs, so leaving this off
+  // must send no override at all, not the pre-filled value re-sent as
+  // one -- otherwise every document would silently "override" to its own
+  // brand default, which is indistinguishable from not overriding until
+  // the brand default itself changes.
+  const [accentOverrideOn, setAccentOverrideOn] = useState(false);
+  const [accentOverride, setAccentOverride] = useState(DEFAULT_ACCENT);
+  const brandDefaultAccent = target.accentColor || DEFAULT_ACCENT;
 
   const namespace = namespaceFor(target);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -224,6 +237,10 @@ export default function StudioWizard() {
       setPreviewHtml("");
       setResult(null);
       setNotice(restored ? "An autosaved draft for this document was restored." : "");
+      // A fresh document starts on the brand default, not carrying over
+      // whatever override the previous document happened to have.
+      setAccentOverrideOn(false);
+      setAccentOverride(target.accentColor || DEFAULT_ACCENT);
       setStep(3);
     } catch (cause) {
       setArchetypesError(cause instanceof Error ? cause.message : String(cause));
@@ -267,6 +284,10 @@ export default function StudioWizard() {
           namespace,
           archetypeId: schema.id,
           content: buildContentPayload(schema, values),
+          // Only present when the creator actually turned the override
+          // on for this document -- an absent field is what lets the
+          // engine's resolution order fall through to the brand default.
+          accentOverride: accentOverrideOn ? accentOverride : undefined,
         }),
       });
       const body = (await res.json()) as PreviewResponse & { error?: string };
@@ -302,6 +323,7 @@ export default function StudioWizard() {
           archetypeId: schema.id,
           formats: selected,
           content: buildContentPayload(schema, values),
+          accentOverride: accentOverrideOn ? accentOverride : undefined,
         }),
       });
       const body = (await res.json()) as GenerateResponse & { error?: string };
@@ -415,6 +437,43 @@ export default function StudioWizard() {
             </div>
 
             <div className="flex min-h-0 flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-xs text-neutral-700">
+                <span
+                  aria-hidden
+                  className="h-3.5 w-3.5 rounded-full border border-neutral-300"
+                  style={{ backgroundColor: `#${accentOverrideOn ? accentOverride : brandDefaultAccent}` }}
+                />
+                <span>
+                  Accent:{" "}
+                  {target.kind === "publication" ? `${target.label}'s default` : "house default"}
+                  {" "}(#{brandDefaultAccent})
+                </span>
+                <label className="ml-2 flex items-center gap-1">
+                  <input
+                    type="checkbox"
+                    checked={accentOverrideOn}
+                    onChange={(e) => {
+                      setAccentOverrideOn(e.target.checked);
+                      // Seed the override input from the brand default the
+                      // first time it's turned on, rather than whatever it
+                      // last held -- editing from there is a real override,
+                      // not a blind re-type.
+                      if (e.target.checked) setAccentOverride(brandDefaultAccent);
+                    }}
+                  />
+                  Override for this document
+                </label>
+                {accentOverrideOn ? (
+                  <input
+                    type="color"
+                    value={`#${accentOverride}`}
+                    onChange={(e) => setAccentOverride(e.target.value.replace("#", ""))}
+                    className="h-6 w-8 rounded border border-neutral-300 p-0"
+                    aria-label="Accent colour override for this document"
+                  />
+                ) : null}
+              </div>
+
               <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"

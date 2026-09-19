@@ -66,3 +66,67 @@ pub const STYLE: Style = Style {
         h2_after_twips: 40,
     },
 };
+
+/// The house accent -- same value `STYLE.h2.color` already carries, so a
+/// document with no brand default and no per-document override renders
+/// pixel-identical to before `--pg-accent` existed. Bare hex, no `#`, same
+/// convention as every other color in `STYLE` (`css()`/`hex_color()` add
+/// the `#` at the point each renderer actually needs it).
+pub const DEFAULT_ACCENT: &str = "2F5496";
+
+/// BB26091501 -- accent resolution order for a generated document.
+/// **Per-document override wins if present, otherwise the brand's own
+/// default, otherwise the house default.** This is a pure, read-only
+/// lookup: it never writes `brand_default` back, so calling it twice with
+/// the same inputs and no override always returns the same value (two
+/// briefs generated without touching the input are identical), and
+/// supplying `document_override` for one call can never be observed by a
+/// later call that omits it (overriding one document never mutates the
+/// brand default).
+pub fn resolve_accent(document_override: Option<&str>, brand_default: Option<&str>) -> String {
+    document_override
+        .filter(|s| !s.is_empty())
+        .or_else(|| brand_default.filter(|s| !s.is_empty()))
+        .unwrap_or(DEFAULT_ACCENT)
+        .to_string()
+}
+
+#[cfg(test)]
+mod accent_tests {
+    use super::*;
+
+    #[test]
+    fn falls_back_to_the_house_default_when_neither_is_set() {
+        assert_eq!(resolve_accent(None, None), DEFAULT_ACCENT);
+    }
+
+    #[test]
+    fn uses_the_brand_default_when_no_override_is_given() {
+        assert_eq!(resolve_accent(None, Some("1f7a44")), "1f7a44");
+    }
+
+    #[test]
+    fn a_document_override_wins_over_the_brand_default() {
+        assert_eq!(resolve_accent(Some("ff0000"), Some("1f7a44")), "ff0000");
+    }
+
+    #[test]
+    fn empty_strings_are_treated_as_absent_at_every_level() {
+        assert_eq!(resolve_accent(Some(""), Some("1f7a44")), "1f7a44");
+        assert_eq!(resolve_accent(Some(""), Some("")), DEFAULT_ACCENT);
+    }
+
+    #[test]
+    fn resolving_twice_with_no_override_is_identical_and_never_mutates_the_brand_default() {
+        let brand_default = Some("1f7a44");
+        let first = resolve_accent(None, brand_default);
+        // Overriding a different, hypothetical document in between --
+        // `brand_default` is a plain `&str` binding, so this line alone
+        // already proves it cannot have been written back to; the repeat
+        // resolution below is the behavioral half of that same guarantee.
+        let _ = resolve_accent(Some("ff0000"), brand_default);
+        let second = resolve_accent(None, brand_default);
+        assert_eq!(first, second);
+        assert_eq!(brand_default, Some("1f7a44"));
+    }
+}

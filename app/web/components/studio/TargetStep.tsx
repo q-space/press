@@ -49,7 +49,12 @@ export default function TargetStep({
             key={publication.id}
             type="button"
             onClick={() =>
-              onPick({ kind: "publication", id: publication.id, label: publication.displayName })
+              onPick({
+                kind: "publication",
+                id: publication.id,
+                label: publication.displayName,
+                accentColor: publication.accentColor,
+              })
             }
             className="rounded border border-neutral-300 p-4 text-left hover:border-neutral-900"
           >
