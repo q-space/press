@@ -22,10 +22,14 @@ use super::style::STYLE;
 use genpdf::elements::{Paragraph, TableLayout};
 use genpdf::fonts::{FontData, FontFamily};
 use genpdf::style::{Color, Style};
-use genpdf::{Alignment, Document, Element as _, Margins, Mm, SimplePageDecorator, Size};
+use genpdf::{Alignment, Document, Element as _, Margins, SimplePageDecorator, Size};
 
-fn twips_to_mm(twips: u32) -> f64 {
-    twips as f64 / 1440.0 * 25.4
+// f32, not f64: genpdf 0.2.0's `Mm` has a private field and only implements
+// `From<f32>` (plus the integer types), not `From<f64>` -- callers pass the
+// bare value and rely on `impl Into<Mm>` rather than constructing `Mm(...)`
+// directly.
+fn twips_to_mm(twips: u32) -> f32 {
+    twips as f32 / 1440.0 * 25.4
 }
 
 /// `STYLE`'s colors are bare hex strings ("1F3864") -- same convention
@@ -135,16 +139,16 @@ pub fn render_pdf(doc_tree: &DocumentTree) -> Result<Vec<u8>, genpdf::error::Err
     let mut doc = Document::new(font_family());
     doc.set_title(doc_tree.headline.clone());
     doc.set_paper_size(Size::new(
-        Mm(twips_to_mm(STYLE.page.width_twips)),
-        Mm(twips_to_mm(STYLE.page.height_twips)),
+        twips_to_mm(STYLE.page.width_twips),
+        twips_to_mm(STYLE.page.height_twips),
     ));
 
     let mut decorator = SimplePageDecorator::new();
     decorator.set_margins(Margins::trbl(
-        Mm(twips_to_mm(STYLE.page.margin_top_twips)),
-        Mm(twips_to_mm(STYLE.page.margin_right_twips)),
-        Mm(twips_to_mm(STYLE.page.margin_bottom_twips)),
-        Mm(twips_to_mm(STYLE.page.margin_left_twips)),
+        twips_to_mm(STYLE.page.margin_top_twips),
+        twips_to_mm(STYLE.page.margin_right_twips),
+        twips_to_mm(STYLE.page.margin_bottom_twips),
+        twips_to_mm(STYLE.page.margin_left_twips),
     ));
     doc.set_page_decorator(decorator);
 

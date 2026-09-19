@@ -68,7 +68,7 @@ fn section_node(s: &Value) -> Node {
             table(header, rows)
         }
         "bullets" => {
-            let items = body
+            let items: Vec<String> = body
                 .and_then(|b| b.as_array())
                 .map(|a| a.iter().filter_map(|x| x.as_str().map(String::from)).collect())
                 .unwrap_or_default();
