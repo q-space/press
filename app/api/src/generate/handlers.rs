@@ -109,7 +109,7 @@ pub async fn generate_document(Json(req): Json<GenerateRequest>) -> Response {
     };
 
     let filename_opts = FilenameOptions {
-        version: req.version.clone(),
+        version: &req.version,
         date: Utc::now().date_naive(),
         ext,
     };
@@ -159,7 +159,7 @@ pub struct ArchetypeListQuery {
 }
 
 #[derive(Debug, Serialize)]
-struct FieldOut {
+pub struct FieldOut {
     name: &'static str,
     label: &'static str,
     field_type: &'static str,
@@ -169,7 +169,7 @@ struct FieldOut {
 }
 
 #[derive(Debug, Serialize)]
-struct ArchetypeOut {
+pub struct ArchetypeOut {
     id: &'static str,
     title: &'static str,
     governance: bool,
