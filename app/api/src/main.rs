@@ -7,6 +7,7 @@ mod db;
 mod distribution;
 mod email;
 mod generate;
+mod lists;
 mod payments;
 mod posts;
 mod publications;

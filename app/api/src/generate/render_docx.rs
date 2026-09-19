@@ -29,7 +29,7 @@ fn body_run(text: &str) -> Run {
 fn body_para(text: &str) -> Paragraph {
     Paragraph::new()
         .add_run(body_run(text))
-        .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips as i32))
+        .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips))
 }
 
 fn h2_para(text: &str) -> Paragraph {
@@ -46,15 +46,15 @@ fn h2_para(text: &str) -> Paragraph {
         )
         .line_spacing(
             docx_rs::LineSpacing::new()
-                .before(STYLE.spacing.h2_before_twips as i32)
-                .after(STYLE.spacing.h2_after_twips as i32),
+                .before(STYLE.spacing.h2_before_twips)
+                .after(STYLE.spacing.h2_after_twips),
         )
 }
 
 fn meta_para(text: &str) -> Paragraph {
     Paragraph::new()
         .add_run(fonted_run(text).size(half(STYLE.meta.size)).color(STYLE.meta.color))
-        .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips as i32))
+        .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips))
 }
 
 /// Splits "lead-in **bold** phrase" into separate runs so a bullet can mix
@@ -106,7 +106,7 @@ fn bullet_para(text: &str) -> Paragraph {
         }
         p = p.add_run(run);
     }
-    p.line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips as i32))
+    p.line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips))
 }
 
 fn table_cell_para(text: &str) -> Paragraph {
@@ -135,7 +135,7 @@ fn render_node_to_paras(node: &Node) -> Vec<Paragraph> {
                 Paragraph::new()
                     .add_run(fonted_run(&format!("{}  ", i.label)).size(half(STYLE.body.size)).bold())
                     .add_run(body_run(&i.value))
-                    .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips as i32))
+                    .line_spacing(docx_rs::LineSpacing::new().after(STYLE.spacing.body_after_twips))
             })
             .collect(),
         Node::TruthCheck { sections_used, must_not_say } => {
