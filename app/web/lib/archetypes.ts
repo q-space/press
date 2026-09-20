@@ -4,7 +4,7 @@
  *
  * There is deliberately NO local copy of any archetype's field
  * definitions here. Everything comes from the engine over the wire
- * (`app/api/src/generate/`, surfaced by BB26091205's routes), because a
+ * (Canvas, canvas.acexoft.com, via the server-side routes under app/api/archetypes), because a
  * second copy of a field list is a second thing to keep in step, and the
  * engine's copy is the one the renderers actually build from.
  */

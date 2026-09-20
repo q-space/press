@@ -28,14 +28,6 @@ tracing = "0.1"
 tracing-subscriber = "0.3"
 validator = { version = "0.16", features = ["derive"] }
 uuid = { version = "1", features = ["v4", "v7", "serde"] }
-# BB26091203: the generation engine's naming.rs needs a calendar date for
-# filenames (YYYYMMDD) -- chrono is the standard choice; not previously
-# declared directly even though sea-orm likely pulls it in transitively.
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
-# BB26091203: DOCX/PDF renderers -- see render_docx.rs/render_pdf.rs doc
-# comments for why these specific crates over the alternatives.
-docx-rs = "0.4"
-genpdf = "0.2"
 
 [[bin]]
 name = "qspace-press-api"

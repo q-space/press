@@ -5,7 +5,9 @@ mod config;
 mod db;
 mod distribution;
 mod email;
-mod generate;
+// Structured-list data model (BP26091902): written and unit-tested but not routed until this API
+// connects to Postgres, so it is dead code to the compiler for now.
+#[allow(dead_code)]
 mod lists;
 mod payments;
 mod posts;
@@ -13,7 +15,7 @@ mod publications;
 mod storage;
 
 use axum::{
-    routing::{get, post},
+    routing::get,
     Router,
 };
 
@@ -22,10 +24,9 @@ use axum::{
 /// connected to Postgres/Redis -- see db.rs's own doc comment for why
 /// that's deliberate at this stage, not an oversight.
 ///
-/// `/api/generate*` is the one exception to "nothing is routed yet"
-/// (BP26091906): the generate:: engine is stateless -- no DB read/write
-/// on this path -- so it doesn't need to wait for db.rs to connect the
-/// way every other module here does.
+/// Document generation is not here: it lives in Canvas (canvas.acexoft.com, BP26091907).
+/// Qpress asks Canvas for documents from the web tier (app/web/lib/canvas.ts) and keeps
+/// only what is about publishing.
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
@@ -33,9 +34,7 @@ async fn main() {
     let config = config::Config::from_env();
 
     let app = Router::new()
-        .route("/health", get(health))
-        .route("/api/generate", post(generate::handlers::generate_document))
-        .route("/api/generate/archetypes", get(generate::handlers::archetypes));
+        .route("/health", get(health));
 
     let addr = format!("0.0.0.0:{}", config.port);
     tracing::info!("qspace-press-api listening on {addr}");

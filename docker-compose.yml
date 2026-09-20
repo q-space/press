@@ -30,6 +30,10 @@ services:
     # Confirmed live, not guessed (`web-1` logged "Local: http://localhost:3001`).
     environment:
       QSPACE_API_URL: http://api:3001
+      # The document engine (Canvas). Set CANVAS_RENDER_TOKEN in .env; on the VM the web container
+      # reaches Canvas over the compose network instead (see the VM compose file).
+      CANVAS_URL: ${CANVAS_URL:-https://canvas.acexoft.com}
+      CANVAS_RENDER_TOKEN: ${CANVAS_RENDER_TOKEN:-}
       PORT: "3000"
     depends_on:
       - api
