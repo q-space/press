@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main]
+
+jobs:
+  web:
+    name: Next.js Lint + Type Check + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v3
+        with: { version: 12 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      # typecheck/lint/test run across the whole workspace (app/web +
+      # packages/shared), not just app/web -- the canon doc's own
+      # apps/-era CI only checked web, but packages/shared's Zod schemas
+      # need the same coverage now that they exist.
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+
+  api:
+    name: Rust Check + Clippy + Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: { components: clippy }
+      - uses: Swatinem/rust-cache@v2
+        with: { workspaces: "app/api -> target" }
+      - run: cargo check --manifest-path app/api/Cargo.toml
+      # Row's own scope explicitly adds clippy beyond the canon doc's
+      # plain `cargo check` -- -D warnings so a clean CI run actually
+      # means clean, not "ran without crashing."
+      - run: cargo clippy --manifest-path app/api/Cargo.toml -- -D warnings
+      - run: cargo test --manifest-path app/api/Cargo.toml

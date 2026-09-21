@@ -1,0 +1,21 @@
+# Dev-only image -- cargo-watch for hot-reload via the bind mount in
+# ../../docker-compose.yml, not optimized for image size. The production
+# Dockerfile is BB26090904/staging-deploy scope, not this row's.
+# Untagged (rolling latest stable), not pinned: cargo-watch's transitive
+# deps kept bumping their MSRV mid-scaffold (1.79 failed on edition2024,
+# then 1.85 failed needing 1.87) -- confirmed live via two failed builds,
+# not guessed. Pinning an exact version here would just mean re-bumping
+# it again the next time a transitive dep raises its floor; `cargo-watch`
+# itself is a dev-only tool (never ships to production, see the row's own
+# split between this Dockerfile.dev and a later prod Dockerfile), so
+# rolling latest is the lower-maintenance choice for it specifically.
+FROM rust:slim
+
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+RUN cargo install cargo-watch
+
+WORKDIR /app
+COPY . .
+
+EXPOSE 3001
+CMD ["cargo", "watch", "-x", "run"]
