@@ -37,7 +37,7 @@ pub enum EnqueueOutcome {
 
 /// Enqueues a post's newsletter send. Idempotent-by-constraint, not by
 /// this function: `post_id` is UNIQUE on `newsletter_send_jobs`
-/// (migrations/004_delivery_metering.sql), so a second call for the same
+/// (migrations/005_delivery_metering.sql), so a second call for the same
 /// post returns a DB error rather than a second job -- re-publish/resend
 /// flows deciding what to do with that error is Feature 1 scope, not
 /// this row's.

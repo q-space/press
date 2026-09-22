@@ -65,7 +65,7 @@ impl DeliveryTier {
     }
 
     /// Matches the CHECK constraint on `publications.delivery_plan`
-    /// (migrations/004_delivery_metering.sql). Returns `None` for any
+    /// (migrations/005_delivery_metering.sql). Returns `None` for any
     /// value the DB wouldn't accept either -- callers should fail closed
     /// (see `metering::resolve_publication_allowance`'s doc comment for
     /// why "closed" here means the most conservative tier, Free).
