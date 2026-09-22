@@ -1,0 +1,9 @@
+pub mod decision_brief;
+pub mod email;
+pub mod formal_letter;
+pub mod invoice;
+pub mod meeting_notes;
+pub mod multipage_report;
+pub mod proposal;
+pub mod seed_data_catalogue;
+pub mod single_page_memo;
